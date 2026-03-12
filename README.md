@@ -69,19 +69,5 @@ docker-compose up -d
 | **Output** | Remaining Useful Life in cycles |
 | **Why XGBoost** | Gradient boosting excels at regression with mixed feature types, handles non-linear degradation curves |
 
-### Model 3: LSTM Neural Network — *"What will the sensors read in 5 cycles?"*
 
-| | |
-|---|---|
-| **Algorithm** | Encoder-Decoder LSTM (64→32 encode, 32 decode) |
-| **Input** | Sliding window of last 10 readings (10 × 5 features) |
-| **Output** | Forecasted next 5 readings (5 × 5 features) |
-| **Why LSTM** | Captures temporal dependencies in sequential sensor data — a rising trend in current predicts continued rise |
-
-**Architecture:**
-```
-Input(10, 5) → LSTM(64) → Dropout(0.2) → LSTM(32) → Dropout(0.2)
-            → RepeatVector(5) → LSTM(32) → Dropout(0.2)
-            → TimeDistributed(Dense(5)) → Output(5, 5)
-```
 
