@@ -1,0 +1,281 @@
+<!--
+  ThingsBoard Custom Widget — Fleet Switch Health Overview
+  
+  Shows all switches in a grid. Each card has a gauge, key metrics,
+  and action buttons. Cards auto-color based on health_index.
+
+  Installation:
+    1. ThingsBoard → Widget Library → Create New Widget → Static
+    2. HTML tab → paste this file
+    3. JavaScript tab → paste switch_health_controller.js
+    4. Add to dashboard, bind to entity group or individual devices
+    5. Data keys: health_index, motor_current, transition_time,
+       vibration_peak, motor_temperature, status_message,
+       maintenance_required, remaining_cycles, switch_id
+-->
+
+<div class="fleet-dashboard" ng-controller="SwitchHealthCtrl">
+
+  <!-- Fleet Header -->
+  <div class="fleet-header">
+    <div class="fleet-title">
+      <span class="title-text">Railway Switch Fleet</span>
+      <span class="fleet-count">{{ devices.length }} switches</span>
+    </div>
+    <div class="fleet-summary">
+      <span class="summary-chip healthy">{{ summary.healthy }} healthy</span>
+      <span class="summary-chip degrading" ng-if="summary.degrading > 0">{{ summary.degrading }} degrading</span>
+      <span class="summary-chip critical" ng-if="summary.critical > 0">{{ summary.critical }} critical</span>
+    </div>
+  </div>
+
+  <!-- Switch Cards Grid -->
+  <div class="switch-grid">
+    <div class="switch-card" ng-repeat="dev in devices track by dev.id"
+         ng-class="dev.statusClass">
+
+      <!-- Card Header -->
+      <div class="card-header">
+        <span class="switch-name">{{ dev.id }}</span>
+        <span class="status-dot" ng-class="dev.statusClass"></span>
+      </div>
+
+      <!-- Mini Gauge -->
+      <div class="mini-gauge">
+        <svg viewBox="0 0 120 120" class="gauge-svg">
+          <circle cx="60" cy="60" r="50" fill="none"
+                  stroke="#2a2a3e" stroke-width="10"
+                  stroke-dasharray="235.6" stroke-dashoffset="58.9"
+                  transform="rotate(135 60 60)" stroke-linecap="round"/>
+          <circle cx="60" cy="60" r="50" fill="none"
+                  ng-attr-stroke="{{ dev.gaugeColor }}" stroke-width="10"
+                  ng-attr-stroke-dasharray="{{ dev.gaugeDash }}"
+                  stroke-dashoffset="0"
+                  transform="rotate(135 60 60)" stroke-linecap="round"
+                  class="gauge-arc"/>
+        </svg>
+        <div class="gauge-center">
+          <span class="health-num" ng-style="{ color: dev.gaugeColor }">{{ dev.healthIndex }}</span>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metric-row">
+        <div class="metric">
+          <span class="metric-val" ng-class="{ 'alert': dev.motorCurrent > 7 }">{{ dev.motorCurrent }}A</span>
+          <span class="metric-lbl">Current</span>
+        </div>
+        <div class="metric">
+          <span class="metric-val" ng-class="{ 'alert': dev.transitionTime > 4500 }">{{ dev.transitionTime }}ms</span>
+          <span class="metric-lbl">Trans. Time</span>
+        </div>
+      </div>
+      <div class="metric-row">
+        <div class="metric">
+          <span class="metric-val" ng-class="{ 'alert': dev.vibrationPeak > 2.0 }">{{ dev.vibrationPeak }}g</span>
+          <span class="metric-lbl">Vibration</span>
+        </div>
+        <div class="metric">
+          <span class="metric-val" ng-class="{ 'alert': dev.motorTemp > 60 }">{{ dev.motorTemp }}&deg;C</span>
+          <span class="metric-lbl">Temp</span>
+        </div>
+      </div>
+
+      <!-- Status Message -->
+      <div class="card-status">{{ dev.statusMessage }}</div>
+
+      <!-- RUL indicator -->
+      <div class="rul-bar" ng-if="dev.maintenanceRequired">
+        <span class="rul-text">~{{ dev.remainingCycles }} ops remaining</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="card-actions">
+        <button class="btn-sm btn-reset" ng-click="clearError(dev)" ng-disabled="!dev.maintenanceRequired">Reset</button>
+        <button class="btn-sm btn-inject" ng-click="injectFailure(dev)">Inject</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .fleet-dashboard {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    padding: 16px;
+    min-height: 100%;
+  }
+
+  .fleet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+
+  .fleet-count {
+    font-size: 12px;
+    color: #8b949e;
+    margin-left: 8px;
+  }
+
+  .fleet-summary { display: flex; gap: 6px; }
+
+  .summary-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+  .summary-chip.healthy   { background: #0d4429; color: #3fb950; }
+  .summary-chip.degrading { background: #4a3100; color: #d29922; }
+  .summary-chip.critical  { background: #5a1e1e; color: #f85149; }
+
+  /* Grid */
+  .switch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .switch-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .switch-card.optimal   { border-color: #238636; }
+  .switch-card.degrading { border-color: #d29922; box-shadow: 0 0 8px rgba(210,153,34,0.15); }
+  .switch-card.critical  { border-color: #f85149; box-shadow: 0 0 12px rgba(248,81,73,0.2); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .switch-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e6edf3;
+    letter-spacing: 0.5px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3fb950;
+  }
+  .status-dot.degrading { background: #d29922; }
+  .status-dot.critical  { background: #f85149; animation: blink 1s infinite; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  /* Mini Gauge */
+  .mini-gauge {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 10px;
+  }
+  .gauge-svg { width: 100%; height: 100%; }
+  .gauge-arc { transition: stroke-dasharray 0.6s ease, stroke 0.4s ease; }
+  .gauge-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .health-num {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    transition: color 0.4s;
+  }
+
+  /* Metrics */
+  .metric-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .metric {
+    flex: 1;
+    background: #0d1117;
+    border-radius: 6px;
+    padding: 6px;
+    text-align: center;
+  }
+  .metric-val {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e6edf3;
+  }
+  .metric-val.alert { color: #f85149; }
+  .metric-lbl {
+    font-size: 9px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .card-status {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8b949e;
+    text-align: center;
+    margin: 8px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .rul-bar {
+    background: #5a1e1e;
+    border-radius: 4px;
+    padding: 3px 6px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .rul-text {
+    font-size: 10px;
+    font-weight: 600;
+    color: #f85149;
+  }
+
+  /* Buttons */
+  .card-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-sm {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    transition: opacity 0.2s;
+  }
+  .btn-sm:hover { opacity: 0.85; }
+  .btn-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-reset  { background: #238636; color: #fff; }
+  .btn-inject { background: #da3633; color: #fff; }
+</style>

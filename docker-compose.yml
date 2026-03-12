@@ -1,0 +1,65 @@
+version: '3.8'
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Microservice Architecture
+#
+#  [Simulator] ──MQTT :1883──► [ThingsBoard] ◄──MQTT── [ML Predictor]
+#                                    │
+#                              [Dashboard :8080]
+#
+#  ThingsBoard's built-in MQTT broker handles all messaging.
+#  Each device authenticates with its access token.
+#  No separate broker needed.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+services:
+
+  # ── IoT Platform (MQTT Broker + Rule Engine + Dashboard) ────────
+  thingsboard:
+    image: thingsboard/tb-postgres:3.6.2
+    container_name: thingsboard
+    restart: unless-stopped
+    ports:
+      - "8080:9090"     # Web UI + REST API
+      - "1883:1883"     # MQTT broker (built-in)
+      - "5683:5683/udp" # CoAP (optional)
+    environment:
+      TB_QUEUE_TYPE: in-memory
+    volumes:
+      - tb-data:/data
+      - tb-logs:/var/log/thingsboard
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/login || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # ── Microservice 1: Fleet Simulator (5 Point Machines) ──────────
+  simulator:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.simulator
+    container_name: simulator
+    restart: unless-stopped
+    depends_on:
+      thingsboard:
+        condition: service_healthy
+
+  # ── Microservice 2: ML Predictor (RF + XGBoost + LSTM) ─────────
+  ml-predictor:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.ml
+    container_name: ml-predictor
+    restart: unless-stopped
+    depends_on:
+      thingsboard:
+        condition: service_healthy
+    volumes:
+      - ./ml/models:/app/ml/models:ro
+      - ./ml/data:/app/ml/data:ro
+
+volumes:
+  tb-data:
+  tb-logs:

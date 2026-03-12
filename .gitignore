@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# ML artifacts (generated, not tracked)
+ml/data/
+ml/models/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+tb-data/
+tb-logs/
+
+# Misc
+*.log
+output.md

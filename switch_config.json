@@ -1,0 +1,61 @@
+{
+  "broker": {
+    "host": "mosquitto",
+    "port": 1883
+  },
+  "publish_interval_sec": 5,
+  "switches": [
+    {
+      "id": "SW-001",
+      "token": "RAILWAY_SWITCH_01",
+      "location": "Platform 3 Junction — Main Line",
+      "model": "S700K",
+      "manufacturer": "Siemens Mobility",
+      "failure_scenario": null
+    },
+    {
+      "id": "SW-002",
+      "token": "RAILWAY_SWITCH_02",
+      "location": "North Yard Entry — Siding A",
+      "model": "S700K",
+      "manufacturer": "Siemens Mobility",
+      "failure_scenario": {
+        "mode": "mechanical_friction",
+        "start_after_cycles": 10,
+        "duration_cycles": 30
+      }
+    },
+    {
+      "id": "SW-003",
+      "token": "RAILWAY_SWITCH_03",
+      "location": "Depot Throat — Track 7",
+      "model": "HW1000",
+      "manufacturer": "Alstom",
+      "failure_scenario": {
+        "mode": "blockage",
+        "start_after_cycles": 20,
+        "duration_cycles": 25
+      }
+    },
+    {
+      "id": "SW-004",
+      "token": "RAILWAY_SWITCH_04",
+      "location": "South Junction — Express Bypass",
+      "model": "S700K",
+      "manufacturer": "Siemens Mobility",
+      "failure_scenario": {
+        "mode": "electrical",
+        "start_after_cycles": 15,
+        "duration_cycles": 20
+      }
+    },
+    {
+      "id": "SW-005",
+      "token": "RAILWAY_SWITCH_05",
+      "location": "East Crossover — Platform 1/2",
+      "model": "L826H",
+      "manufacturer": "Voestalpine",
+      "failure_scenario": null
+    }
+  ]
+}

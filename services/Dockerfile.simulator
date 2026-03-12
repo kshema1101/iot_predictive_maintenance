@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements-simulator.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY simulator.py .
+COPY switch_config.json .
+
+CMD ["python", "-u", "simulator.py", "--thingsboard", "--host", "thingsboard", "--port", "1883"]
